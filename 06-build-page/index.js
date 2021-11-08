@@ -3,7 +3,43 @@ const { createWriteStream, createReadStream } = require('fs');
 const { readdir, mkdir, rm, copyFile } = require('fs/promises');
 const { createInterface } = require('readline');
 
-buildPage();
+async function copyDir(src, dest) {
+  try {
+    await rm(dest, { recursive: true });
+    await mkdir(dest);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      await mkdir(dest);
+    }
+  }
+
+  const files = await readdir(src, { withFileTypes: true });
+
+  for (const file of files) {
+    if (file.isFile()) {
+      await copyFile(join(src, file.name), join(dest, file.name));
+    } else {
+      await copyDir(join(src, file.name), join(dest, file.name));
+    }
+  }
+}
+
+async function mergeStyles(styles, bundle) {
+  const writer = createWriteStream(bundle);
+
+  const files = await readdir(styles, { withFileTypes: true });
+
+  for (const file of files) {
+    if (file.isFile() && parse(file.name).ext === '.css') {
+      const reader = createReadStream(join(styles, file.name));
+
+      reader.on('data', data => {
+        writer.write(data + '\n');
+        reader.close();
+      });
+    }
+  }
+}
 
 async function buildPage() {
   const projectDistDir = join(__dirname, 'project-dist');
@@ -43,6 +79,7 @@ async function buildPage() {
 
     for (const file of files) {
       if (file.isFile() && parse(file.name).ext === '.html') {
+
         const name = parse(file.name).name;
 
         let component = '';
@@ -82,39 +119,4 @@ async function buildPage() {
   await copyDir(assetsDir, assetsCopyDir);
 }
 
-async function copyDir(src, dest) {
-  try {
-    await rm(dest, { recursive: true });
-    await mkdir(dest);
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      await mkdir(dest);
-    }
-  }
-
-  const files = await readdir(src, { withFileTypes: true });
-
-  for (const file of files) {
-    if (file.isFile()) {
-      await copyFile(join(src, file.name), join(dest, file.name));
-    } else {
-      await copyDir(join(src, file.name), join(dest, file.name));
-    }
-  }
-}
-
-async function mergeStyles(styles, bundle) {
-  const writer = createWriteStream(bundle);
-
-  const files = await readdir(styles, { withFileTypes: true });
-
-  for (const file of files) {
-    if (file.isFile() && parse(file.name).ext === '.css') {
-      const reader = createReadStream(join(styles, file.name));
-      reader.on('data', data => {
-        writer.write(data + '\n');
-        reader.close();
-      });
-    }
-  }
-}
+buildPage();
