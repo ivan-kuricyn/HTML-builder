@@ -2,17 +2,19 @@ const { join, parse } = require('path');
 const { createWriteStream, createReadStream } = require('fs');
 const { readdir } = require('fs/promises');
 
-async function mergeStyles() {
-  const stylesDir = join(__dirname, 'styles');
-  const bundleFile = join(__dirname, 'project-dist', 'bundle.css');
+const stylesDir = join(__dirname, 'styles');
+const bundleFile = join(__dirname, 'project-dist', 'bundle.css');
 
-  const writer = createWriteStream(bundleFile);
+mergeStyles(stylesDir, bundleFile);
 
-  const files = await readdir(stylesDir, { withFileTypes: true });
+async function mergeStyles(styles, bundle) {
+  const writer = createWriteStream(bundle);
+
+  const files = await readdir(styles, { withFileTypes: true });
 
   for (const file of files) {
     if (file.isFile() && parse(file.name).ext === '.css') {
-      const reader = createReadStream(join(stylesDir, file.name));
+      const reader = createReadStream(join(styles, file.name));
       reader.on('data', data => {
         writer.write(data + '\n');
         reader.close();
@@ -20,5 +22,3 @@ async function mergeStyles() {
     }
   }
 }
-
-mergeStyles();
