@@ -109,7 +109,7 @@ async function buildPage() {
   });
 
   const stylesDir = join(__dirname, 'styles');
-  const bundleFile = join(__dirname, 'project-dist', 'styles.css');
+  const bundleFile = join(__dirname, 'project-dist', 'style.css');
 
   await mergeStyles(stylesDir, bundleFile);
 
